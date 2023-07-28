@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Jogo da Cobrinha - Ryan</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Jogo da Cobrinha</h1>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const box = 20;
+    const rows = canvas.height / box;
+    const cols = canvas.width / box;
+
+    const snake = {
+      x: 10 * box,
+      y: 10 * box,
+      dx: box,
+      dy: 0,
+      cells: [],
+      maxCells: 1,
+    };
+
+    const apple = {
+      x: 0,
+      y: 0,
+    };
+
+    const walls = [
+      { x: 5 * box, y: 5 * box },
+      { x: 6 * box, y: 5 * box },
+      { x: 7 * box, y: 5 * box },
+      // Adicione mais paredes aqui, se desejar
+    ];
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    function isWallCollision(x, y) {
+      return walls.some((wall) => wall.x === x && wall.y === y);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      snake.x += snake.dx;
+      snake.y += snake.dy;
+
+      if (snake.x < 0) snake.x = (cols - 1) * box;
+      if (snake.y < 0) snake.y = (rows - 1) * box;
+      if (snake.x >= cols * box) snake.x = 0;
+      if (snake.y >= rows * box) snake.y = 0;
+
+      if (isWallCollision(snake.x, snake.y)) {
+        snake.cells = [{ x: 10 * box, y: 10 * box }];
+        snake.maxCells = 1;
+        snake.dx = box;
+        snake.dy = 0;
+      }
+
+      snake.cells.unshift({ x: snake.x, y: snake.y });
+
+      if (snake.cells.length > snake.maxCells) {
+        snake.cells.pop();
+      }
+
+      ctx.fillStyle = "green";
+      snake.cells.forEach((cell, index) => {
+        ctx.fillRect(cell.x, cell.y, box, box);
+        if (cell.x === snake.x && cell.y === snake.y && index > 0) {
+          snake.cells = [{ x: 10 * box, y: 10 * box }];
+          snake.maxCells = 1;
+          snake.dx = box;
+          snake.dy = 0;
+        }
+      });
+
+      ctx.fillStyle = "red";
+      ctx.fillRect(apple.x, apple.y, box, box);
+
+      ctx.fillStyle = "gray";
+      walls.forEach((wall) => {
+        ctx.fillRect(wall.x, wall.y, box, box);
+      });
+    }
+
+    function updateApplePosition() {
+      do {
+        apple.x = getRandomInt(0, cols) * box;
+        apple.y = getRandomInt(0, rows) * box;
+      } while (isWallCollision(apple.x, apple.y) || isSnakeCollision(apple.x, apple.y));
+    }
+
+    function eatApple() {
+      if (snake.x === apple.x && snake.y === apple.y) {
+        snake.maxCells++;
+        updateApplePosition();
+      }
+    }
+
+    function isSnakeCollision(x, y) {
+      return snake.cells.some((cell) => cell.x === x && cell.y === y);
+    }
+
+    updateApplePosition();
+
+    document.addEventListener("keydown", (event) => {
+      const key = event.key;
+      if (key === "ArrowLeft" && snake.dx === 0) {
+        snake.dx = -box;
+        snake.dy = 0;
+      } else if (key === "ArrowRight" && snake.dx === 0) {
+        snake.dx = box;
+        snake.dy = 0;
+      } else if (key === "ArrowUp" && snake.dy === 0) {
+        snake.dy = -box;
+        snake.dx = 0;
+      } else if (key === "ArrowDown" && snake.dy === 0) {
+        snake.dy = box;
+        snake.dx = 0;
+      }
+    });
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    document.addEventListener("touchstart", (event) => {
+      touchStartX = event.touches[0].clientX;
+      touchStartY = event.touches[0].clientY;
+    });
+
+    document.addEventListener("touchmove", (event) => {
+      const touchEndX = event.touches[0].clientX;
+      const touchEndY = event.touches[0].clientY;
+
+      const dx = touchEndX - touchStartX;
+      const dy = touchEndY - touchStartY;
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0 && snake.dx === 0) {
+          snake.dx = box;
+          snake.dy = 0;
+        } else if (dx < 0 && snake.dx === 0) {
+          snake.dx = -box;
+          snake.dy = 0;
+        }
+      } else {
+        if (dy > 0 && snake.dy === 0) {
+          snake.dy = box;
+          snake.dx = 0;
+        } else if (dy < 0 && snake.dy === 0) {
+          snake.dy = -box;
+          snake.dx = 0;
+        }
+      }
+
+      touchStartX = touchEndX;
+      touchStartY = touchEndY;
+    });
+
+    function gameLoop() {
+      draw();
+      eatApple();
+    }
+
+    setInterval(gameLoop, 1000
